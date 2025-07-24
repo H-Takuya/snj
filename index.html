@@ -17,10 +17,74 @@
 <body>
   <div id="app">
     <h1>3文字英単語シミュレーター</h1>
+
     <div id="result">結果がここに表示されます</div>
     <div id="count"></div>
+    <div id="wordAnim" style="display:none;text-align:center;margin:1.5em 0;font-size:2.5em;font-weight:bold;"></div>
     <button id="startBtn">スタート</button>
   </div>
   <script src="main.js"></script>
+  <script>
+    // アニメーション用
+    function animateWord(word) {
+      const anim = document.getElementById('wordAnim');
+      anim.textContent = '';
+      anim.style.display = '';
+      anim.style.color = '#007aff';
+      let i = 0;
+      function showChar() {
+        if (i < word.length) {
+          anim.textContent += word[i];
+          anim.style.transform = 'scale(' + (1.2 + 0.2 * Math.sin(i)) + ')';
+          anim.style.color = ['#007aff','#ff4081','#00c853'][i%3];
+          i++;
+          setTimeout(showChar, 220);
+        } else {
+          anim.style.transform = 'scale(1.5)';
+          setTimeout(() => {
+            anim.style.transform = 'scale(1)';
+            anim.style.color = '#222';
+            setTimeout(()=>{anim.style.display='none';},700);
+          }, 600);
+        }
+      }
+      showChar();
+    }
+    // ローディング風エフェクト
+    function loadingEffect() {
+      const result = document.getElementById('result');
+      let dots = 0;
+      result.textContent = '検索中';
+      result.style.color = '#aaa';
+      let running = true;
+      function loop() {
+        if (!running) return;
+        result.textContent = '検索中' + '.'.repeat(dots%4);
+        dots++;
+        setTimeout(loop, 300);
+      }
+      loop();
+      return () => { running = false; result.style.color = '#222'; };
+    }
+    // main.jsの処理をフック
+    const origStartBtn = document.getElementById('startBtn').onclick;
+    document.getElementById('startBtn').onclick = function() {
+      document.getElementById('wordAnim').style.display = 'none';
+      const stopLoading = loadingEffect();
+      setTimeout(() => {
+        // main.jsのfindValidWordをwindowに生やしておく必要あり
+        if (window.findValidWord) {
+          const { word, count } = window.findValidWord();
+          stopLoading();
+          document.getElementById('result').textContent = `見つかった単語: ${word}`;
+          document.getElementById('count').textContent = `試行回数: ${count}回`;
+          animateWord(word);
+        } else {
+          // fallback: main.jsの元のonclick
+          origStartBtn && origStartBtn();
+        }
+      }, 100);
+    }
+  </script>
 </body>
 </html>

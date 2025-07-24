@@ -1,5 +1,6 @@
 // 3文字英単語シミュレーター
 
+document.getElementById("startBtn").onclick = () => {
 const DICTIONARY = [
   "cat", "dog", "sun", "car", "box", "man", "fan", "run", "bat", "hat",
   "map", "pen", "cup", "top", "red", "bed", "net", "jet", "pot", "log"
@@ -24,12 +25,4 @@ function findValidWord() {
   return { word, count };
 }
 
-document.getElementById("startBtn").onclick = () => {
-  document.getElementById("result").textContent = "検索中...";
-  document.getElementById("count").textContent = "";
-  setTimeout(() => {
-    const { word, count } = findValidWord();
-    document.getElementById("result").textContent = `見つかった単語: ${word}`;
-    document.getElementById("count").textContent = `試行回数: ${count}回`;
-  }, 100);
-};
+window.findValidWord = findValidWord;
