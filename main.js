@@ -1,6 +1,4 @@
 // 3文字英単語シミュレーター
-
-document.getElementById("startBtn").onclick = () => {
 const DICTIONARY = [
   "cat", "dog", "sun", "car", "box", "man", "fan", "run", "bat", "hat",
   "map", "pen", "cup", "top", "red", "bed", "net", "jet", "pot", "log"
