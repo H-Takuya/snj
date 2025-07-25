@@ -13,10 +13,23 @@ function randomWord(length = 3) {
   return word;
 }
 
-// 1回だけ判定するステップ関数
+// パフォーマンス向上: 1文字目を固定し、1000回超えたら再抽選
+let firstChar = null;
+let subTry = 0;
 let lastWord = "";
 function findValidWordStep() {
-  lastWord = randomWord(3);
+  const chars = "abcdefghijklmnopqrstuvwxyz";
+  if (firstChar === null || subTry > 1000) {
+    firstChar = chars[Math.floor(Math.random() * chars.length)];
+    subTry = 0;
+  }
+  // 2,3文字目のみランダム
+  let word = firstChar;
+  for (let i = 0; i < 2; i++) {
+    word += chars[Math.floor(Math.random() * chars.length)];
+  }
+  lastWord = word;
+  subTry++;
   return { word: lastWord, found: DICTIONARY.includes(lastWord) };
 }
 
