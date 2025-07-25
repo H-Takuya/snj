@@ -1,3 +1,5 @@
+// 直前のワードを取得する関数をwindowに生やす
+window.getLastWord = function() { return lastWord; };
 // 3文字英単語シミュレーター
 const DICTIONARY = [
   "cat", "dog", "sun", "car", "box", "man", "fan", "run", "bat", "hat",
