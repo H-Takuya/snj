@@ -15,14 +15,11 @@ function randomWord(length = 3) {
   return word;
 }
 
-function findValidWord() {
-  let count = 0;
-  let word = "";
-  do {
-    word = randomWord(3);
-    count++;
-  } while (!DICTIONARY.includes(word));
-  return { word, count };
+// 1回だけ判定するステップ関数
+let lastWord = "";
+function findValidWordStep() {
+  lastWord = randomWord(3);
+  return { word: lastWord, found: DICTIONARY.includes(lastWord) };
 }
 
-window.findValidWord = findValidWord;
+window.findValidWordStep = findValidWordStep;

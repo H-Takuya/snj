@@ -22,68 +22,100 @@
     <div id="count"></div>
     <div id="wordAnim" style="display:none;text-align:center;margin:1.5em 0;font-size:2.5em;font-weight:bold;"></div>
     <button id="startBtn">スタート</button>
+    <button id="stopBtn" style="display:none;">ストップ</button>
   </div>
   <script src="main.js"></script>
   <script>
-    // アニメーション用
+    // アニメーション用（カラフルなバウンド＆フェード）
     function animateWord(word) {
       const anim = document.getElementById('wordAnim');
       anim.textContent = '';
       anim.style.display = '';
-      anim.style.color = '#007aff';
+      anim.style.opacity = 1;
       let i = 0;
       function showChar() {
         if (i < word.length) {
-          anim.textContent += word[i];
-          anim.style.transform = 'scale(' + (1.2 + 0.2 * Math.sin(i)) + ')';
-          anim.style.color = ['#007aff','#ff4081','#00c853'][i%3];
+          const span = document.createElement('span');
+          span.textContent = word[i];
+          span.style.display = 'inline-block';
+          span.style.transform = 'scale(0.2)';
+          span.style.transition = 'transform 0.3s cubic-bezier(.68,-0.55,.27,1.55), color 0.3s';
+          span.style.color = ['#ff4081','#00c853','#007aff'][i%3];
+          anim.appendChild(span);
+          setTimeout(()=>{span.style.transform='scale(1.6)';},10);
+          setTimeout(()=>{span.style.transform='scale(1)';},350);
           i++;
-          setTimeout(showChar, 220);
+          setTimeout(showChar, 250);
         } else {
-          anim.style.transform = 'scale(1.5)';
           setTimeout(() => {
-            anim.style.transform = 'scale(1)';
-            anim.style.color = '#222';
-            setTimeout(()=>{anim.style.display='none';},700);
-          }, 600);
+            anim.style.opacity = 0;
+            setTimeout(()=>{anim.style.display='none'; anim.textContent=''; anim.style.opacity=1;},600);
+          }, 900);
         }
       }
       showChar();
     }
-    // ローディング風エフェクト
+    // ローディング風エフェクト（カラフルな点が跳ねる）
     function loadingEffect() {
       const result = document.getElementById('result');
-      let dots = 0;
-      result.textContent = '検索中';
-      result.style.color = '#aaa';
+      let t = 0;
       let running = true;
       function loop() {
         if (!running) return;
-        result.textContent = '検索中' + '.'.repeat(dots%4);
-        dots++;
-        setTimeout(loop, 300);
+        let dots = '';
+        for(let i=0;i<3;i++) {
+          const y = Math.abs(Math.sin(t/6 + i*0.7))*8;
+          dots += `<span style="display:inline-block;color:${['#ff4081','#00c853','#007aff'][i]};transform:translateY(-${y}px);font-size:1.3em;">●</span>`;
+        }
+        result.innerHTML = '検索中 ' + dots;
+        t++;
+        setTimeout(loop, 80);
       }
       loop();
-      return () => { running = false; result.style.color = '#222'; };
+      return () => { running = false; result.innerHTML = ''; };
     }
-    // main.jsの処理をフック
-    const origStartBtn = document.getElementById('startBtn').onclick;
-    document.getElementById('startBtn').onclick = function() {
+    // start/stop制御
+    let running = false;
+    let tryCount = 0;
+    let stopLoading = null;
+    let searchTimer = null;
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    startBtn.onclick = function() {
+      if (running) return;
+      running = true;
+      startBtn.style.display = 'none';
+      stopBtn.style.display = '';
       document.getElementById('wordAnim').style.display = 'none';
-      const stopLoading = loadingEffect();
-      setTimeout(() => {
-        // main.jsのfindValidWordをwindowに生やしておく必要あり
-        if (window.findValidWord) {
-          const { word, count } = window.findValidWord();
-          stopLoading();
+      document.getElementById('count').textContent = '';
+      stopLoading = loadingEffect();
+      tryCount = 0;
+      function search() {
+        if (!running) return;
+        const { word, found } = window.findValidWordStep();
+        tryCount++;
+        if (found) {
+          running = false;
+          stopLoading && stopLoading();
           document.getElementById('result').textContent = `見つかった単語: ${word}`;
-          document.getElementById('count').textContent = `試行回数: ${count}回`;
+          document.getElementById('count').textContent = `試行回数: ${tryCount}回`;
           animateWord(word);
+          startBtn.style.display = '';
+          stopBtn.style.display = 'none';
         } else {
-          // fallback: main.jsの元のonclick
-          origStartBtn && origStartBtn();
+          searchTimer = setTimeout(search, 10);
         }
-      }, 100);
+      }
+      search();
+    }
+    stopBtn.onclick = function() {
+      running = false;
+      stopBtn.style.display = 'none';
+      startBtn.style.display = '';
+      stopLoading && stopLoading();
+      document.getElementById('result').textContent = 'ストップしました';
+      document.getElementById('count').textContent = `試行回数: ${tryCount}回`;
+      clearTimeout(searchTimer);
     }
   </script>
 </body>
