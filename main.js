@@ -1,38 +1,71 @@
-// 直前のワードを取得する関数をwindowに生やす
-window.getLastWord = function() { return lastWord; };
-// 3文字英単語シミュレーター
+let lastWord = "";
+
+window.getLastWord = function() {
+  return lastWord;
+};
+
 const DICTIONARY = [
-  "cat", "dog", "sun", "car", "box", "man", "fan", "run", "bat", "hat",
-  "map", "pen", "cup", "top", "red", "bed", "net", "jet", "pot", "log"
+  "ace", "act", "add", "age", "air", "ant", "ape", "apt", "arc", "arm", "art", "ash", "axe",
+  "bad", "bag", "bar", "bat", "bay", "bed", "bee", "beg", "bet", "bib", "bin", "bit", "bow", "box", "boy", "bus",
+  "cab", "cad", "cal", "cam", "can", "cap", "car", "cat", "cog", "cop", "cow", "cry", "cup", "cut",
+  "dew", "dig", "dip", "dog", "dot", "dry",
+  "ear", "eat", "eel", "egg", "elk", "elm", "end",
+  "fan", "far", "fig", "fin", "fit", "fix", "fog", "fox", "fun",
+  "gap", "gas", "gem", "get", "gig", "gin", "gym",
+  "had", "ham", "hat", "hex", "hip", "hop", "hot",
+  "ice", "ink",
+  "jam", "jar", "jet", "jog", "joy",
+  "key",
+  "lab", "lap", "law", "leg", "let", "lid", "log",
+  "man", "map", "mat", "mix",
+  "nap", "net", "new", "nod", "nut",
+  "oak", "ode", "oil", "one", "orb", "owl",
+  "pad", "peg", "pen", "pie", "pig", "pin", "pop", "pot",
+  "rag", "ram", "ran", "rat", "raw", "ray", "rib", "row", "rug", "run",
+  "sap", "saw", "sea", "sip", "six", "sky", "son", "sun",
+  "tab", "tag", "tan", "tap", "tar", "tax", "tea", "ten", "tip", "toe", "toy",
+  "urn", "use",
+  "van",
+  "web", "win", "won",
+  "yak", "yep", "yes",
+  "zen"
 ];
 
-function randomWord(length = 3) {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
+const DICTIONARY_SET = new Set(DICTIONARY);
+const LETTERS = "abcdefghijklmnopqrstuvwxyz";
+
+let firstChar = null;
+let subTry = 0;
+
+function randomSuffix(length) {
   let word = "";
   for (let i = 0; i < length; i++) {
-    word += chars[Math.floor(Math.random() * chars.length)];
+    word += LETTERS[Math.floor(Math.random() * LETTERS.length)];
   }
   return word;
 }
 
-// パフォーマンス向上: 1文字目を固定し、1000回超えたら再抽選
-let firstChar = null;
-let subTry = 0;
-let lastWord = "";
 function findValidWordStep() {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
   if (firstChar === null || subTry > 1000) {
-    firstChar = chars[Math.floor(Math.random() * chars.length)];
+    firstChar = LETTERS[Math.floor(Math.random() * LETTERS.length)];
     subTry = 0;
   }
-  // 2,3文字目のみランダム
-  let word = firstChar;
-  for (let i = 0; i < 2; i++) {
-    word += chars[Math.floor(Math.random() * chars.length)];
-  }
+
+  const word = firstChar + randomSuffix(2);
   lastWord = word;
   subTry++;
-  return { word: lastWord, found: DICTIONARY.includes(lastWord) };
+
+  return {
+    word,
+    found: DICTIONARY_SET.has(word),
+  };
+}
+
+function resetWordSearchState() {
+  firstChar = null;
+  subTry = 0;
+  lastWord = "";
 }
 
 window.findValidWordStep = findValidWordStep;
+window.resetWordSearchState = resetWordSearchState;

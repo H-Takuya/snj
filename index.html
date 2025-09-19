@@ -2,133 +2,573 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3文字英単語シミュレーター</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body { background: #f7f8fa; color: #222; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-    #app { max-width: 400px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 8px 32px #0002; padding: 2em 1.5em; }
-    h1 { text-align: center; color: #007aff; margin-bottom: 1em; }
-    #result { font-size: 1.3em; margin: 1em 0; text-align: center; }
-    #count { font-size: 1.1em; color: #555; text-align: center; }
-    button { display: block; margin: 2em auto 0 auto; padding: 0.7em 2.2em; font-size: 1.1em; border-radius: 22px; border: 1px solid #cfd8dc; background: #e0e5ec; color: #007aff; font-weight: 600; cursor: pointer; }
-    button:active { background: #d0d5dc; }
+    :root {
+      color-scheme: light;
+      --accent-blue: #007aff;
+      --accent-pink: #ff4081;
+      --accent-green: #00c853;
+      --surface: #ffffffcc;
+      --surface-alt: #f4f7fb;
+      --text-main: #1f2933;
+      --text-sub: #5c6773;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 48px);
+      background: radial-gradient(circle at 20% 20%, #e8f1ff 0%, #f7f8fa 45%, #e5f9f1 100%);
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      color: var(--text-main);
+    }
+
+    #app {
+      width: min(440px, 92vw);
+      background: rgba(255, 255, 255, 0.86);
+      border-radius: 22px;
+      box-shadow: 0 20px 45px rgba(0, 53, 128, 0.2);
+      backdrop-filter: blur(10px);
+      padding: clamp(28px, 6vw, 40px) clamp(24px, 5vw, 36px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(255, 64, 129, 0.08));
+      pointer-events: none;
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.8rem, 4vw, 2.1rem);
+      color: var(--accent-blue);
+      letter-spacing: 0.04em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status {
+      position: relative;
+      z-index: 1;
+      margin-top: clamp(18px, 3vw, 24px);
+      text-align: center;
+    }
+
+    #result {
+      font-size: clamp(1.2rem, 3.5vw, 1.4rem);
+      font-weight: 600;
+      min-height: 2.2em;
+    }
+
+    .loading-last {
+      font-size: 1.05em;
+      color: var(--text-sub);
+      margin-right: 0.35em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .loading-dot {
+      display: inline-block;
+      font-size: 1.2em;
+      line-height: 1;
+      padding: 0 0.08em;
+    }
+
+    #count {
+      margin-top: 0.4em;
+      font-size: 1rem;
+      color: var(--text-sub);
+    }
+
+    .stats-grid {
+      margin-top: 1.4rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface-alt);
+      border-radius: 14px;
+      padding: 0.9rem 0.6rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    .history {
+      position: relative;
+      z-index: 1;
+      margin-top: clamp(22px, 4vw, 28px);
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+
+    .history h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+      color: var(--text-sub);
+      text-align: left;
+    }
+
+    .history-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 8px;
+      font-family: 'Fira Mono', 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.95rem;
+    }
+
+    .history-item {
+      background: var(--surface-alt);
+      border-radius: 10px;
+      padding: 0.45rem 0.55rem;
+      text-align: center;
+      letter-spacing: 0.08em;
+      position: relative;
+      color: var(--text-main);
+    }
+
+    .history-item.is-empty {
+      color: var(--text-sub);
+      font-style: italic;
+      background: none;
+      border: 1px dashed rgba(0, 0, 0, 0.1);
+    }
+
+    .history-item.is-hit {
+      background: linear-gradient(135deg, rgba(0, 200, 83, 0.18), rgba(0, 200, 83, 0.08));
+      color: #0f5132;
+      font-weight: 600;
+    }
+
+    .history-badge {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 0.65rem;
+      background: rgba(0, 200, 83, 0.9);
+      color: #fff;
+      padding: 0.05rem 0.35rem;
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+    }
+
+    .controls {
+      position: relative;
+      z-index: 1;
+      margin-top: clamp(22px, 4vw, 30px);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .speed-label {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(0, 122, 255, 0.2);
+      outline: none;
+      margin-top: 0.3rem;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      border: none;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-pink));
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      border: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(0, 122, 255, 0.35);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #4da3ff, #007aff);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(0, 122, 255, 0.25);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #ff758c, #ff416c);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(255, 65, 108, 0.25);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #wordAnim {
+      position: relative;
+      z-index: 1;
+      display: none;
+      text-align: center;
+      margin: 1.8rem 0 0.8rem;
+      font-size: clamp(2.1rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      transition: opacity 0.4s ease;
+    }
+
+    #wordAnim.is-fadeout {
+      opacity: 0;
+    }
+
+    .anim-letter {
+      display: inline-block;
+      transform: scale(0.25);
+      opacity: 0;
+      color: var(--accent-blue);
+      transition: transform 0.32s cubic-bezier(.68,-0.55,.27,1.55), opacity 0.32s, color 0.32s;
+      margin: 0 0.05em;
+    }
+
+    .anim-letter.is-pop {
+      transform: scale(1.4);
+      opacity: 1;
+    }
+
+    .anim-letter.is-rest {
+      transform: scale(1);
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .history-list { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
+    }
   </style>
 </head>
 <body>
-  <div id="app">
+  <main id="app">
     <h1>3文字英単語シミュレーター</h1>
 
-    <div id="result">結果がここに表示されます</div>
-    <div id="count"></div>
-    <div id="wordAnim" style="display:none;text-align:center;margin:1.5em 0;font-size:2.5em;font-weight:bold;"></div>
-    <button id="startBtn">スタート</button>
-    <button id="stopBtn" style="display:none;">ストップ</button>
-  </div>
+    <section class="status">
+      <div id="result">探索を開始できます</div>
+      <div id="count">試行回数: 0回</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Unique</span>
+          <span id="uniqueCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Hits</span>
+          <span id="matchCount" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Hit Rate</span>
+          <span id="matchRate" class="stat-value">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="wordAnim"></div>
+
+    <section class="history">
+      <h2>最新トライ</h2>
+      <ol id="historyList" class="history-list"></ol>
+    </section>
+
+    <section class="controls">
+      <div class="speed-label">
+        <label for="speedRange">検索スピード</label>
+        <span id="speedLabel">0 ワード/秒</span>
+      </div>
+      <input type="range" id="speedRange" min="20" max="160" step="5" value="40">
+      <div class="button-row" style="display:flex; gap:12px;">
+        <button type="button" id="startBtn" class="btn-start" style="flex:1;">スタート</button>
+        <button type="button" id="stopBtn" class="btn-stop" style="flex:1; display:none;">ストップ</button>
+      </div>
+    </section>
+  </main>
+
   <script src="main.js"></script>
   <script>
-    // アニメーション用（カラフルなバウンド＆フェード）
+    const themeColors = ['#ff4081', '#00c853', '#007aff'];
+
     function animateWord(word) {
       const anim = document.getElementById('wordAnim');
-      anim.textContent = '';
-      anim.style.display = '';
-      anim.style.opacity = 1;
+      anim.classList.remove('is-fadeout');
+      anim.innerHTML = '';
+      anim.style.display = 'block';
       let i = 0;
       function showChar() {
         if (i < word.length) {
           const span = document.createElement('span');
           span.textContent = word[i];
-          span.style.display = 'inline-block';
-          span.style.transform = 'scale(0.2)';
-          span.style.transition = 'transform 0.3s cubic-bezier(.68,-0.55,.27,1.55), color 0.3s';
-          span.style.color = ['#ff4081','#00c853','#007aff'][i%3];
+          span.className = 'anim-letter';
+          span.style.color = themeColors[i % themeColors.length];
           anim.appendChild(span);
-          setTimeout(()=>{span.style.transform='scale(1.6)';},10);
-          setTimeout(()=>{span.style.transform='scale(1)';},350);
+          requestAnimationFrame(() => span.classList.add('is-pop'));
+          setTimeout(() => span.classList.replace('is-pop', 'is-rest'), 300);
           i++;
-          setTimeout(showChar, 250);
+          setTimeout(showChar, 220);
         } else {
           setTimeout(() => {
-            anim.style.opacity = 0;
-            setTimeout(()=>{anim.style.display='none'; anim.textContent=''; anim.style.opacity=1;},600);
+            anim.classList.add('is-fadeout');
+            setTimeout(() => {
+              anim.style.display = 'none';
+              anim.innerHTML = '';
+              anim.classList.remove('is-fadeout');
+            }, 420);
           }, 900);
         }
       }
       showChar();
     }
-    // ローディング風エフェクト（カラフルな点が跳ねる）
-    function loadingEffect() {
-      const result = document.getElementById('result');
+
+    function loadingEffect(resultEl) {
       let t = 0;
       let running = true;
-      let lastWord = '';
       function loop() {
         if (!running) return;
-        // 直前のワードを表示
-        if(window.getLastWord) {
-          lastWord = window.getLastWord();
-        }
-        let dots = '';
-        for(let i=0;i<3;i++) {
-          const y = Math.abs(Math.sin(t/6 + i*0.7))*8;
-          dots += `<span style="display:inline-block;color:${['#ff4081','#00c853','#007aff'][i]};transform:translateY(-${y}px);font-size:1.3em;">●</span>`;
-        }
-        result.innerHTML = `<span style='font-size:1.2em;color:#888;'>${lastWord}</span> ` + dots;
+        const lastWord = window.getLastWord ? window.getLastWord() : '';
+        const dots = themeColors.map((color, index) => {
+          const y = Math.abs(Math.sin(t / 6 + index * 0.75)) * 9;
+          return `<span class="loading-dot" style="color:${color};transform:translateY(-${y.toFixed(1)}px);">●</span>`;
+        }).join('');
+        const label = lastWord ? `<span class="loading-last">${lastWord}</span>` : '';
+        resultEl.innerHTML = label + dots;
         t++;
         setTimeout(loop, 80);
       }
       loop();
-      return () => { running = false; result.innerHTML = ''; };
+      return () => {
+        running = false;
+        resultEl.innerHTML = '';
+      };
     }
-    // start/stop制御
-    let running = false;
-    let tryCount = 0;
-    let stopLoading = null;
-    let searchTimer = null;
+
+    const state = {
+      running: false,
+      tryCount: 0,
+      matchCount: 0,
+      uniqueWords: new Set(),
+      history: [],
+      stopLoading: null,
+      searchTimer: null,
+    };
+
+    const resultEl = document.getElementById('result');
+    const countEl = document.getElementById('count');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
-    startBtn.onclick = function() {
-      if (running) return;
-      running = true;
+    const historyList = document.getElementById('historyList');
+    const uniqueCountEl = document.getElementById('uniqueCount');
+    const matchCountEl = document.getElementById('matchCount');
+    const matchRateEl = document.getElementById('matchRate');
+    const speedRange = document.getElementById('speedRange');
+    const speedLabel = document.getElementById('speedLabel');
+
+    function updateSpeedLabel() {
+      const delay = Number(speedRange.value);
+      const perSecond = Math.round(1000 / Math.max(1, delay));
+      speedLabel.textContent = `${perSecond} ワード/秒`;
+    }
+
+    function updateStatsPanel() {
+      countEl.textContent = `試行回数: ${state.tryCount}回`;
+      uniqueCountEl.textContent = state.uniqueWords.size.toString();
+      matchCountEl.textContent = state.matchCount.toString();
+      const rate = state.tryCount === 0 ? 0 : (state.matchCount / state.tryCount) * 100;
+      matchRateEl.textContent = `${rate.toFixed(1)}%`;
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      if (state.history.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'history-item is-empty';
+        li.textContent = '履歴はまだありません';
+        historyList.appendChild(li);
+        return;
+      }
+      state.history.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'history-item' + (item.found ? ' is-hit' : '');
+        li.textContent = item.word;
+        if (item.found) {
+          const badge = document.createElement('span');
+          badge.className = 'history-badge';
+          badge.textContent = 'HIT';
+          li.appendChild(badge);
+        }
+        historyList.appendChild(li);
+      });
+    }
+
+    function pushHistory(word, found) {
+      state.history.unshift({ word, found });
+      if (state.history.length > 8) {
+        state.history.pop();
+      }
+      renderHistory();
+    }
+
+    function startSearch() {
+      if (state.running) return;
+      state.running = true;
+      state.tryCount = 0;
+      state.matchCount = 0;
+      state.uniqueWords.clear();
+      state.history = [];
+      renderHistory();
+      updateStatsPanel();
+      resultEl.textContent = '探索中...';
+      const wordAnim = document.getElementById('wordAnim');
+      wordAnim.style.display = 'none';
+      wordAnim.innerHTML = '';
+
+      if (state.stopLoading) {
+        state.stopLoading();
+        state.stopLoading = null;
+      }
+      state.stopLoading = loadingEffect(resultEl);
+
+      if (window.resetWordSearchState) {
+        window.resetWordSearchState();
+      }
+
       startBtn.style.display = 'none';
       stopBtn.style.display = '';
-      document.getElementById('wordAnim').style.display = 'none';
-      document.getElementById('count').textContent = '';
-      stopLoading = loadingEffect();
-      tryCount = 0;
-      function search() {
-        if (!running) return;
+      stopBtn.disabled = false;
+
+      function loop() {
+        if (!state.running) return;
         const { word, found } = window.findValidWordStep();
-        tryCount++;
+        state.tryCount++;
+        if (!state.uniqueWords.has(word)) {
+          state.uniqueWords.add(word);
+        }
+        pushHistory(word, found);
+
         if (found) {
-          running = false;
-          stopLoading && stopLoading();
-          document.getElementById('result').textContent = `見つかった単語: ${word}`;
-          document.getElementById('count').textContent = `試行回数: ${tryCount}回`;
+          state.matchCount++;
+          updateStatsPanel();
+          state.running = false;
+          if (state.stopLoading) {
+            state.stopLoading();
+            state.stopLoading = null;
+          }
+          resultEl.textContent = `見つかった単語: ${word}`;
           animateWord(word);
           startBtn.style.display = '';
           stopBtn.style.display = 'none';
-        } else {
-          // 検索中はワードを表示（loadingEffectで上書きされるが、stop時には残る）
-          document.getElementById('result').textContent = word;
-          searchTimer = setTimeout(search, 10);
+          state.searchTimer = null;
+          return;
         }
+
+        updateStatsPanel();
+        resultEl.textContent = word;
+        const delay = Number(speedRange.value);
+        state.searchTimer = setTimeout(loop, delay);
       }
-      search();
+
+      loop();
     }
-    stopBtn.onclick = function() {
-      running = false;
+
+    function stopSearch() {
+      if (!state.running) return;
+      state.running = false;
+      if (state.stopLoading) {
+        state.stopLoading();
+        state.stopLoading = null;
+      }
+      if (state.searchTimer) {
+        clearTimeout(state.searchTimer);
+        state.searchTimer = null;
+      }
+      const lastWord = window.getLastWord ? window.getLastWord() : '';
+      resultEl.textContent = lastWord || 'ストップしました';
+      updateStatsPanel();
       stopBtn.style.display = 'none';
       startBtn.style.display = '';
-      stopLoading && stopLoading();
-      // 最後に試したワードを表示
-      if(window.getLastWord) {
-        document.getElementById('result').textContent = window.getLastWord();
-      } else {
-        document.getElementById('result').textContent = 'ストップしました';
-      }
-      document.getElementById('count').textContent = `試行回数: ${tryCount}回`;
-      clearTimeout(searchTimer);
     }
+
+    startBtn.addEventListener('click', startSearch);
+    stopBtn.addEventListener('click', stopSearch);
+    speedRange.addEventListener('input', updateSpeedLabel);
+
+    renderHistory();
+    updateStatsPanel();
+    updateSpeedLabel();
   </script>
 </body>
 </html>
